@@ -1,0 +1,43 @@
+# Environnement virtuel
+.venv/
+venv/
+env/
+
+# Clés API et variables d'environnement
+.env
+
+# Base de données locale
+data/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Cache Streamlit
+.streamlit/
+
+# Fichiers IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Distribution Python
+dist/
+build/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ChromaDB (qu'on ajoutera plus tard)
+chroma_db/
