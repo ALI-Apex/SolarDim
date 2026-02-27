@@ -1,9 +1,17 @@
+import logging
+from datetime import datetime
 import streamlit as st
 import plotly.graph_objects as go
 from core.storage import get_localisation, get_consommation_moyenne, get_parametres
+from core.sizing import calculer_rentabilite
 from export.pdf_generator import generer_pdf_dimensionnement
 
-def afficher_metriques_dimensionnement():
+logger = logging.getLogger(__name__)
+
+PERFORMANCE_RATIO = 0.65
+
+
+def afficher_metriques_dimensionnement() -> None:
     if "dim" not in st.session_state:
         return
 
@@ -13,19 +21,20 @@ def afficher_metriques_dimensionnement():
     parametres = get_parametres()
     ville = localisation["ville"].split(",")[0] if localisation else "site"
 
-    from core.sizing import calculer_rentabilite
-
     tarif = moyenne["tarif_moyen_fcfa_kwh"] if moyenne else float(parametres["tarif_kwh"])
     prix_installation = float(parametres["prix_total_installation"])
 
     rentabilite = None
-    if prix_installation > 0:
-        rentabilite = calculer_rentabilite(
-            prix_total_installation=prix_installation,
-            production_annuelle_kwh=localisation["irradiation_annuelle_kwh"] * dim["puissance_installee_kwc"],
-            tarif_kwh=tarif,
-        )
-        st.session_state.rentabilite = rentabilite
+    if prix_installation > 0 and localisation:
+        try:
+            rentabilite = calculer_rentabilite(
+                prix_total_installation=prix_installation,
+                production_annuelle_kwh=float(localisation["irradiation_annuelle_kwh"]) * dim["puissance_installee_kwc"],
+                tarif_kwh=tarif,
+            )
+            st.session_state.rentabilite = rentabilite
+        except (ValueError, KeyError) as e:
+            logger.error("Erreur calcul rentabilité : %s", e)
 
     st.markdown("---")
     col_resultats, col_graphe = st.columns(2)
@@ -36,7 +45,6 @@ def afficher_metriques_dimensionnement():
     with col_resultats:
         st.subheader("⚡ Résultats du dimensionnement")
 
-        # --- Tableau de base ---
         lignes_base = ""
         lignes_base += f"<tr><td>Puissance installée</td><td><strong>{dim['puissance_installee_kwc']} kWc</strong></td></tr>"
         lignes_base += f"<tr><td>Nombre de panneaux</td><td><strong>{dim['nombre_panneaux']} × {dim['puissance_panneau_wc']} Wc</strong></td></tr>"
@@ -58,16 +66,16 @@ def afficher_metriques_dimensionnement():
         lignes_enrichies = ""
 
         if dim.get("configuration_strings"):
-            config_strings = dim["configuration_strings"]
-            for s in config_strings["strings"]:
+            for s in dim["configuration_strings"].get("strings", []):
                 if s.get("nb_panneaux_affectes", 0) > 0:
-                    lignes_enrichies += f"<tr><td>Entrée PV {s['numero_string']} — Série</td><td><strong>{s['nb_serie_affecte']} panneaux</strong></td></tr>"
-                    lignes_enrichies += f"<tr><td>Entrée PV {s['numero_string']} — Parallèle</td><td><strong>{s['nb_parallele_affecte']} string(s)</strong></td></tr>"
-                    lignes_enrichies += f"<tr><td>Entrée PV {s['numero_string']} — Total affecté</td><td><strong>{s['nb_panneaux_affectes']} panneaux</strong></td></tr>"
+                    n = s["numero_string"]
+                    lignes_enrichies += f"<tr><td>Entrée PV {n} — Série</td><td><strong>{s['nb_serie_affecte']} panneaux</strong></td></tr>"
+                    lignes_enrichies += f"<tr><td>Entrée PV {n} — Parallèle</td><td><strong>{s['nb_parallele_affecte']} string(s)</strong></td></tr>"
+                    lignes_enrichies += f"<tr><td>Entrée PV {n} — Total affecté</td><td><strong>{s['nb_panneaux_affectes']} panneaux</strong></td></tr>"
                     if s.get("nb_serie_min") and s.get("nb_serie_max_mppt"):
-                        lignes_enrichies += f"<tr><td>Entrée PV {s['numero_string']} — Plage série</td><td><strong>{s['nb_serie_min']} à {s['nb_serie_max_mppt']} panneaux</strong></td></tr>"
+                        lignes_enrichies += f"<tr><td>Entrée PV {n} — Plage série</td><td><strong>{s['nb_serie_min']} à {s['nb_serie_max_mppt']}</strong></td></tr>"
                     if s.get("tension_string_v"):
-                        lignes_enrichies += f"<tr><td>Entrée PV {s['numero_string']} — Tension</td><td><strong>{s['tension_string_v']} V</strong></td></tr>"
+                        lignes_enrichies += f"<tr><td>Entrée PV {n} — Tension</td><td><strong>{s['tension_string_v']} V</strong></td></tr>"
 
         if dim.get("surface_champ"):
             sf = dim["surface_champ"]
@@ -91,17 +99,13 @@ def afficher_metriques_dimensionnement():
         # --- Avertissements ---
         avertissements = []
         if dim.get("configuration_strings"):
-            for avert in dim["configuration_strings"].get("avertissements", []):
-                avertissements.append(avert)
-            if dim["configuration_strings"].get("panneaux_non_affectes", 0) > 0:
-                avertissements.append(
-                    f"⚠️ {dim['configuration_strings']['panneaux_non_affectes']} panneau(x) non affecté(s)"
-                )
+            avertissements.extend(dim["configuration_strings"].get("avertissements", []))
+            non_affectes = dim["configuration_strings"].get("panneaux_non_affectes", 0)
+            if non_affectes > 0:
+                avertissements.append(f"⚠️ {non_affectes} panneau(x) non affecté(s)")
 
-        if dim.get("configuration_batterie"):
-            b = dim["configuration_batterie"]
-            if b.get("avertissement_tension"):
-                avertissements.append(b["avertissement_tension"])
+        if dim.get("configuration_batterie") and dim["configuration_batterie"].get("avertissement_tension"):
+            avertissements.append(dim["configuration_batterie"]["avertissement_tension"])
 
         if avertissements:
             st.markdown("<br>", unsafe_allow_html=True)
@@ -116,7 +120,7 @@ def afficher_metriques_dimensionnement():
             st.subheader("💰 Projection rentabilité 10 ans")
             afficher_graphe_rentabilite(rentabilite)
         else:
-            st.info("💡 Renseignez le prix total de l'installation dans **Configurations → Paramètres économiques** pour afficher la projection de rentabilité.")
+            st.info("💡 Renseignez le prix total de l'installation dans **Configurations → Paramètres économiques**.")
 
         st.markdown("---")
         st.subheader("📄 Fiche technique")
@@ -125,7 +129,7 @@ def afficher_metriques_dimensionnement():
         lignes_fiche += f"<tr><td>Consommation journalière</td><td><strong>{dim['consommation_journaliere_kwh']} kWh/j</strong></td></tr>"
         lignes_fiche += f"<tr><td>Source consommation</td><td><strong>{'Équipements' if dim['source_consommation'] == 'equipements' else 'Factures'}</strong></td></tr>"
         lignes_fiche += f"<tr><td>HSP utilisé</td><td><strong>{dim['hsp_utilise']} h/j</strong></td></tr>"
-        lignes_fiche += f"<tr><td>Performance Ratio</td><td><strong>0.65</strong></td></tr>"
+        lignes_fiche += f"<tr><td>Performance Ratio</td><td><strong>{PERFORMANCE_RATIO}</strong></td></tr>"
         lignes_fiche += f"<tr><td>Puissance crête nécessaire</td><td><strong>{dim['puissance_crete_necessaire_wc']} Wc</strong></td></tr>"
         lignes_fiche += f"<tr><td>Profondeur de décharge</td><td><strong>{int(dim['batterie']['profondeur_decharge'] * 100)} %</strong></td></tr>"
         if rentabilite:
@@ -137,31 +141,30 @@ def afficher_metriques_dimensionnement():
         table_fiche += "</table>"
         st.markdown(table_fiche, unsafe_allow_html=True)
 
-    # --- Bouton export PDF ---
+    # --- Export PDF ---
     st.markdown("<br>", unsafe_allow_html=True)
-    from datetime import datetime
+    try:
+        pdf_bytes = generer_pdf_dimensionnement(
+            dim=dim,
+            localisation=localisation,
+            rentabilite=rentabilite,
+            moyenne=moyenne,
+            parametres=parametres
+        )
+        st.download_button(
+            label="📥 Exporter en PDF",
+            data=pdf_bytes,
+            file_name=f"dimensionnement_{ville}_{datetime.now().strftime('%Y%m%d')}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            type="primary"
+        )
+    except Exception as e:
+        logger.error("Erreur génération PDF : %s", e)
+        st.error("❌ Erreur lors de la génération du PDF.")
 
-    pdf_bytes = generer_pdf_dimensionnement(
-        dim=dim,
-        localisation=localisation,
-        rentabilite=rentabilite,
-        moyenne=moyenne,
-        parametres=parametres
-    )
 
-    nom_fichier = f"dimensionnement_{ville}_{datetime.now().strftime('%Y%m%d')}.pdf"
-
-    st.download_button(
-        label="📥 Exporter en PDF",
-        data=pdf_bytes,
-        file_name=nom_fichier,
-        mime="application/pdf",
-        use_container_width=True,
-        type="primary"
-    )
-
-
-def afficher_graphe_rentabilite(rentabilite: dict):
+def afficher_graphe_rentabilite(rentabilite: dict) -> None:
     annees = [0] + [p["annee"] for p in rentabilite["projection_10_ans"]]
     valeurs = [-rentabilite["cout_total_installation"]] + [
         p["economies_cumulees"] for p in rentabilite["projection_10_ans"]
@@ -189,16 +192,8 @@ def afficher_graphe_rentabilite(rentabilite: dict):
     fig.update_layout(
         xaxis_title="Années",
         yaxis_title="Gain cumulé (FCFA)",
-        xaxis=dict(
-            title_font=dict(color="#1B2A4A", size=13),
-            tickfont=dict(color="#1B2A4A"),
-            gridcolor="#e0e0e0"
-        ),
-        yaxis=dict(
-            title_font=dict(color="#1B2A4A", size=13),
-            tickfont=dict(color="#1B2A4A"),
-            gridcolor="#e0e0e0"
-        ),
+        xaxis=dict(title_font=dict(color="#1B2A4A", size=13), tickfont=dict(color="#1B2A4A"), gridcolor="#e0e0e0"),
+        yaxis=dict(title_font=dict(color="#1B2A4A", size=13), tickfont=dict(color="#1B2A4A"), gridcolor="#e0e0e0"),
         plot_bgcolor="white",
         paper_bgcolor="white",
         font=dict(color="#1B2A4A"),
@@ -208,8 +203,8 @@ def afficher_graphe_rentabilite(rentabilite: dict):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def afficher_rapport_agent():
-    if "resultat_analyse" not in st.session_state:
-        st.info("💡 Lancez d'abord l'analyse depuis l'accueil.")
+def afficher_rapport_agent() -> None:
+    if "dim" not in st.session_state:
+        st.info("💡 Lancez d'abord une analyse depuis l'accueil.")
         return
-    st.markdown(st.session_state.resultat_analyse)
+    st.info("🚧 Fonctionnalité en cours de développement — disponible prochainement.")

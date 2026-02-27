@@ -6,6 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="0637602b-0d02-4781-b626-cfb78231f3d8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/facture_extractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/facture_extractor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/parsing.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/sizing.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/sizing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/solar_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/solar_data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/storage.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/storage.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/input_forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/input_forms.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,12 +33,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "git@github.com:ALI-Apex/SolarDim.git",
-    "accountId": "d1842058-f5a9-4455-861e-0d49345f2e67"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;ALI-Apex&quot;
   }
-}]]></component>
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;git@github.com:ALI-Apex/SolarDim.git&quot;,
+    &quot;accountId&quot;: &quot;d1842058-f5a9-4455-861e-0d49345f2e67&quot;
+  }
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
 }</component>
@@ -41,17 +53,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "dart.analysis.tool.window.visible": "false",
+    "git-widget-placeholder": "code-review",
+    "show.migrate.to.gradle.popup": "false"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
