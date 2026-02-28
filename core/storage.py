@@ -1,4 +1,6 @@
 import sqlite3
+import uuid
+import streamlit as st
 import os
 import logging
 from contextlib import contextmanager
@@ -9,16 +11,24 @@ logger = logging.getLogger(__name__)
 # ==============================
 # CONSTANTES
 # ==============================
-PATH_DB = Path(os.getenv("DB_PATH", "data/pv_dimensioning.db"))
 
 
 # ==============================
 # CONNEXION
 # ==============================
+
+def _get_db_path() -> Path:
+    """Retourne le chemin de la base de données, en s'assurant que le dossier existe."""
+    if "session_id" not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())
+    path = Path(os.getenv("DB_PATH", f"data/session_{st.session_state.session_id}.db"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def get_connection() -> sqlite3.Connection:
     """Retourne une connexion à la base de données."""
-    PATH_DB.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(PATH_DB))
+    conn = sqlite3.connect(str(_get_db_path()))
     conn.row_factory = sqlite3.Row
     return conn
 
