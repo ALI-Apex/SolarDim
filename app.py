@@ -8,7 +8,7 @@ st.set_page_config(
     page_title="SolarDim Pro",
     page_icon="☀️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 st.markdown(get_css(), unsafe_allow_html=True)

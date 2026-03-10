@@ -186,10 +186,9 @@ def get_css():
             font-weight: bold !important;
         } 
         
-        /* Layout */ 
+        /* Layout */
         div[data-testid="stLayoutWrapper"] {
             color: black;
-            font-size: 2rem;
         }
 
     /* =================== METRICS CARDS =============================== */
@@ -284,6 +283,105 @@ def get_css():
         /* Cacher le menu hamburger Streamlit */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
+
+    /* =================== RESPONSIVE MOBILE ====================== */
+        @media (max-width: 768px) {
+
+            /* Titres de page */
+            .page-title {
+                font-size: 28px !important;
+                letter-spacing: 0 !important;
+                margin-bottom: 4px !important;
+            }
+            .page-subtitle {
+                font-size: 14px !important;
+                margin-bottom: 16px !important;
+            }
+
+            /* Colonnes : empilées sur mobile */
+            [data-testid="column"] {
+                min-width: 100% !important;
+                width: 100% !important;
+            }
+
+            /* Metric cards : padding réduit */
+            .metric-card {
+                padding: 14px !important;
+                margin-bottom: 10px !important;
+            }
+            .metric-card .value {
+                font-size: 20px !important;
+            }
+            .metric-card .label {
+                font-size: 13px !important;
+            }
+
+            /* Section cards */
+            .section-card {
+                padding: 14px !important;
+            }
+
+            /* Onglets : plus compacts */
+            [data-testid="stTabs"] [data-testid="stTab"] {
+                font-size: 12px !important;
+                padding: 6px 10px !important;
+                margin-right: 4px !important;
+            }
+            [data-testid="stTabs"] [role="tablist"] {
+                gap: 4px !important;
+                flex-wrap: wrap !important;
+            }
+            [data-testid="stTabs"] [role="tabpanel"] {
+                padding: 14px !important;
+            }
+
+            /* Tableaux résultats */
+            .result-table thead th {
+                font-size: 15px !important;
+                padding: 8px 10px !important;
+            }
+            .result-table tbody td {
+                font-size: 13px !important;
+                padding: 8px 10px !important;
+            }
+            .result-table tbody td:first-child {
+                width: 50% !important;
+            }
+
+            /* Inputs et boutons */
+            .stButton > button {
+                font-size: 14px !important;
+                padding: 10px 12px !important;
+            }
+            [data-testid="stFormSubmitButton"] > button {
+                font-size: 14px !important;
+                padding: 10px 16px !important;
+            }
+
+            /* Sidebar : largeur réduite sur mobile */
+            section[data-testid="stSidebar"] {
+                min-width: 200px !important;
+                max-width: 240px !important;
+            }
+            [data-testid="stSidebar"] .stButton > button {
+                font-size: 13px !important;
+                padding: 10px 12px !important;
+            }
+
+            /* Conteneur principal : moins de padding */
+            div[data-testid="stMainBlockContainer"] {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+
+            /* st.metric */
+            [data-testid="stMetric"] {
+                padding: 8px !important;
+            }
+            [data-testid="stMetricValue"] {
+                font-size: 18px !important;
+            }
+        }
         
     /* ================== Tableaux résultats ======================*/
         .result-table {
