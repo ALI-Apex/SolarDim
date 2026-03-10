@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain.agents import create_agent
+from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage
 from agent.tools import get_donnees_projet, outil_dimensionnement, outil_rentabilite
 
@@ -25,8 +25,8 @@ Ton rôle est d'analyser les données fournies et de produire un dimensionnement
 Voici comment tu dois procéder :
 1. Commence par appeler get_donnees_projet pour récupérer toutes les données disponibles
 2. Analyse les composants disponibles fournis par l'utilisateur
-3. Si l'utilisateur a des panneaux, utilise leur puissance. Sinon propose 400Wc par défaut
-4. Si l'utilisateur a des batteries, utilise leur tension. Sinon propose 24V par défaut
+3. Si l'utilisateur a des panneaux, utilise leur puissance. Sinon propose 500Wc par défaut
+4. Si l'utilisateur a des batteries, utilise leur tension. Sinon propose 48V par défaut
 5. Appelle outil_dimensionnement avec les bons paramètres
 6. Appelle outil_rentabilite avec la puissance installée obtenue
 7. Rédige un rapport structuré en français avec :
@@ -39,10 +39,10 @@ Voici comment tu dois procéder :
 Sois précis, professionnel et pédagogique dans tes explications.
 Utilise toujours les unités correctes (Wc, kWc, Ah, kWh, V)."""
 
-    agent = create_agent(
+    agent = create_react_agent(
         model=llm,
         tools=outils,
-        system_prompt=system_prompt
+        prompt=system_prompt
     )
 
     return agent

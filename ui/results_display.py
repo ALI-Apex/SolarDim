@@ -6,9 +6,9 @@ from core.storage import get_localisation, get_consommation_moyenne, get_paramet
 from core.sizing import calculer_rentabilite
 from export.pdf_generator import generer_pdf_dimensionnement
 
-logger = logging.getLogger(__name__)
+from config import PERFORMANCE_RATIO_DEFAULT
 
-PERFORMANCE_RATIO = 0.65
+logger = logging.getLogger(__name__)
 
 
 def afficher_metriques_dimensionnement() -> None:
@@ -129,7 +129,7 @@ def afficher_metriques_dimensionnement() -> None:
         lignes_fiche += f"<tr><td>Consommation journalière</td><td><strong>{dim['consommation_journaliere_kwh']} kWh/j</strong></td></tr>"
         lignes_fiche += f"<tr><td>Source consommation</td><td><strong>{'Équipements' if dim['source_consommation'] == 'equipements' else 'Factures'}</strong></td></tr>"
         lignes_fiche += f"<tr><td>HSP utilisé</td><td><strong>{dim['hsp_utilise']} h/j</strong></td></tr>"
-        lignes_fiche += f"<tr><td>Performance Ratio</td><td><strong>{PERFORMANCE_RATIO}</strong></td></tr>"
+        lignes_fiche += f"<tr><td>Performance Ratio</td><td><strong>{PERFORMANCE_RATIO_DEFAULT}</strong></td></tr>"
         lignes_fiche += f"<tr><td>Puissance crête nécessaire</td><td><strong>{dim['puissance_crete_necessaire_wc']} Wc</strong></td></tr>"
         lignes_fiche += f"<tr><td>Profondeur de décharge</td><td><strong>{int(dim['batterie']['profondeur_decharge'] * 100)} %</strong></td></tr>"
         if rentabilite:

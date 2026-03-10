@@ -9,6 +9,7 @@ from reportlab.platypus import (
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from datetime import datetime
 import io
+from config import PERFORMANCE_RATIO_DEFAULT, TARIF_KWH_DEFAULT_FCFA
 
 # ==============================
 # COULEURS
@@ -271,13 +272,13 @@ def generer_pdf_dimensionnement(
     story.extend(creer_header_section("FICHE TECHNIQUE", styles))
 
     tarif = moyenne["tarif_moyen_fcfa_kwh"] if moyenne else (
-        float(parametres["tarif_kwh"]) if parametres else 150
+        float(parametres["tarif_kwh"]) if parametres else TARIF_KWH_DEFAULT_FCFA
     )
 
     fiche_data = [
         ["Consommation journaliere", f"{dim['consommation_journaliere_kwh']} kWh/j"],
         ["HSP utilise", f"{dim['hsp_utilise']} h/j"],
-        ["Performance Ratio", "0.65 (standard off-grid)"],
+        ["Performance Ratio", f"{PERFORMANCE_RATIO_DEFAULT} (standard off-grid)"],
         ["Puissance crete necessaire", f"{dim['puissance_crete_necessaire_wc']} Wc"],
         ["Profondeur de decharge", f"{int(dim['batterie']['profondeur_decharge'] * 100)} %"],
         ["Tarif kWh utilise", f"{tarif} FCFA/kWh"],

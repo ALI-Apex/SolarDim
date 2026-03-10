@@ -1,5 +1,5 @@
 from langchain.tools import tool
-from config import TARIF_KWH_DEFAULT_FCFA
+from config import TARIF_KWH_DEFAULT_FCFA, PUISSANCE_PANNEAU_DEFAULT_WC, TENSION_BATTERIE_DEFAULT_V
 from core.storage import get_equipements, get_localisation, get_composants, get_parametres
 from core.sizing import (
     calculer_dimensionnement_complet,
@@ -27,7 +27,7 @@ def get_donnees_projet(input: str = "") -> dict:
 
 
 @tool
-def outil_dimensionnement(puissance_panneau_wc: float = 400, tension_batterie_v: float = 24) -> dict:
+def outil_dimensionnement(puissance_panneau_wc: float = PUISSANCE_PANNEAU_DEFAULT_WC, tension_batterie_v: float = TENSION_BATTERIE_DEFAULT_V) -> dict:
     """
     Calcule le dimensionnement complet du système PV off-grid.
     Utilise les données de la base (équipements + localisation).
