@@ -1,5 +1,3 @@
-import traceback
-
 import streamlit as st
 from ui.style import get_css
 from core.storage import initialiser_stockage
@@ -55,7 +53,7 @@ def _afficher_wizard_bar(data: dict) -> None:
         statut = _get_step_status(nom, data)
         label_circle = "✓" if statut == "done" else str(i + 1)
         html += f"""
-        <div class='wizard-step' onclick="''">
+        <div class='wizard-step'>
             <div class='wizard-step-circle {statut}'>{label_circle}</div>
             <div class='wizard-step-label {statut}'>{icone} {nom}</div>
         </div>"""
@@ -79,7 +77,7 @@ with st.sidebar:
         <div style='height:1px; background:#1a2a4a; margin:0 8px 12px 8px;'></div>
     """, unsafe_allow_html=True)
 
-    for icone, nom in [("📖", "Guide & Notions"), ("🤖", "Analyse IA")]:
+    for icone, nom in zip(["📖", "🤖"], SIDEBAR_PAGES):
         is_active = st.session_state.page_active == nom
         btn_style = "background:#F4A300 !important; color:white !important; font-weight:bold !important;"
         if is_active:
@@ -105,9 +103,9 @@ page = st.session_state.page_active
 from core.storage import (
     get_factures, get_equipements, get_localisation,
     get_consommation_moyenne, get_module_pv,
-    get_onduleur, get_batterie, get_strings, get_parametres
+    get_onduleur, get_batterie, get_strings
 )
-from core.sizing import calculer_dimensionnement_complet, calculer_consommation_journaliere
+from core.sizing import calculer_dimensionnement_complet
 
 factures = get_factures()
 equipements = get_equipements()
@@ -198,12 +196,16 @@ else:
         st.markdown("<div class='page-subtitle'>Dimensionnement complet de votre installation</div>", unsafe_allow_html=True)
         from ui.results_display import afficher_metriques_dimensionnement
 
-        peut_analyser = (len(factures) >= 1 or len(equipements) >= 1) and localisation is not None
+        peut_analyser = (
+            (len(equipements) >= 1 or (len(factures) >= 1 and moyenne is not None))
+            and localisation is not None
+        )
 
         if not peut_analyser:
             st.warning("⚠️ Complétez au minimum les étapes **Consommation** (Factures ou Équipements) et **Localisation** avant de lancer l'analyse.")
         else:
-            if "dim" not in st.session_state:
+            show_pulse = "dim" not in st.session_state
+            if show_pulse:
                 st.markdown("<div class='btn-pulse'>", unsafe_allow_html=True)
             if st.button("⚡ Lancer l'analyse", type="primary", use_container_width=True):
                 with st.spinner("Calcul en cours..."):
@@ -231,7 +233,7 @@ else:
                         st.rerun()
                     except Exception as e:
                         st.error(f"❌ Erreur : {e}")
-            if "dim" not in st.session_state:
+            if show_pulse:
                 st.markdown("</div>", unsafe_allow_html=True)
 
         afficher_metriques_dimensionnement()
