@@ -6,9 +6,9 @@ def afficher_guide():
     # ==============================
     # WORKFLOW
     # ==============================
-    with st.expander("🚀 Comment utiliser SolarDim Pro ?", expanded=True):
+    with st.expander("🚀 Comment utiliser Raana ?", expanded=True):
         st.markdown("""
-        SolarDim Pro vous guide étape par étape pour dimensionner un système photovoltaïque off-grid.
+        Raana vous guide étape par étape pour dimensionner un système photovoltaïque off-grid.
         Voici le workflow recommandé :
         """)
 
