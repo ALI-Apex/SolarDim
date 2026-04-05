@@ -121,21 +121,40 @@ def afficher_formulaire_factures() -> None:
 
 
 def afficher_formulaire_equipements() -> None:
-    st.subheader("🔌 Vos équipements électriques")
-    st.write("Listez vos appareils pour estimer votre consommation journalière.")
+    equipements = get_equipements()
+    total_wh = sum(e["conso_jour_wh"] for e in equipements) if equipements else 0
+    total_kwh = round(total_wh / 1000, 2)
+    nb = len(equipements)
 
+    # --- Compteur live ---
+    st.markdown(f"""
+    <div class='consumption-counter'>
+        <div class='cc-left'>
+            <div class='cc-label'>Consommation totale estimée</div>
+            <div class='cc-total'>{total_wh:,.0f} <span style='font-size:16px;font-weight:normal'>Wh/j</span></div>
+        </div>
+        <div class='cc-right'>
+            <div class='cc-kwh'>{total_kwh} kWh/j</div>
+            <div class='cc-count'>{'✓ ' + str(nb) + ' appareil(s)' if nb > 0 else '⚠ Aucun appareil'}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # --- Formulaire ajout ---
     with st.form("form_equipement", clear_on_submit=True):
-        nom = st.text_input("Nom de l'appareil", placeholder="Ex: Réfrigérateur")
+        col_nom, col_w, col_h, col_q, col_btn = st.columns([3, 1.5, 1.5, 1, 1.5])
+        with col_nom:
+            nom = st.text_input("Appareil", placeholder="Ex: Réfrigérateur", label_visibility="collapsed")
+        with col_w:
+            puissance = st.number_input("W", min_value=0, step=10, label_visibility="collapsed")
+        with col_h:
+            heures = st.number_input("h/j", min_value=0.0, max_value=24.0, step=0.5, label_visibility="collapsed")
+        with col_q:
+            quantite = st.number_input("Qté", min_value=1, step=1, label_visibility="collapsed")
+        with col_btn:
+            submit = st.form_submit_button("➕ Ajouter", use_container_width=True)
 
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            puissance = st.number_input("Puissance (W)", min_value=0, step=10)
-        with col_b:
-            heures = st.number_input("Heures/jour", min_value=0.0, max_value=24.0, step=0.5)
-        with col_c:
-            quantite = st.number_input("Quantité", min_value=1, step=1)
-
-        if st.form_submit_button("➕ Ajouter l'équipement"):
+        if submit:
             if nom and nom.strip() and puissance > 0:
                 conso = puissance * heures * quantite
                 try:
@@ -143,35 +162,50 @@ def afficher_formulaire_equipements() -> None:
                     st.success(f"✅ {nom.strip()} ajouté !")
                 except ValueError as e:
                     st.error(f"❌ {e}")
+                st.rerun()
             else:
-                st.error("Veuillez renseigner un nom et une puissance valide.")
+                st.error("Veuillez renseigner un nom et une puissance > 0.")
 
-    equipements = get_equipements()
-
+    # --- Tableau des équipements ---
     if equipements:
-        st.write("**Équipements enregistrés :**")
-        total_wh = sum(e["conso_jour_wh"] for e in equipements)
+        st.markdown("**Équipements enregistrés :**")
 
-        df = pd.DataFrame(equipements)
-        df_affichage = df[["nom", "puissance_w", "heures_par_jour", "quantite", "conso_jour_wh"]].copy()
-        df_affichage.columns = ["Appareil", "Puissance (W)", "Heures/jour", "Quantité", "Conso/jour (Wh)"]
-        st.dataframe(df_affichage, use_container_width=True)
-
-        st.metric(
-            label="Consommation journalière totale estimée",
-            value=f"{total_wh:.0f} Wh/jour",
-            delta=f"soit {total_wh / 1000:.2f} kWh/jour"
-        )
+        header_cols = st.columns([3, 1.5, 1.5, 1, 1.5, 0.8])
+        headers = ["Appareil", "Puissance (W)", "Heures/jour", "Qté", "Conso (Wh/j)", ""]
+        for col, h in zip(header_cols, headers):
+            col.markdown(f"<div style='font-size:12px;color:#888;font-weight:600'>{h}</div>", unsafe_allow_html=True)
 
         for e in equipements:
-            col_nom, col_suppr = st.columns([5, 1])
-            with col_nom:
-                st.write(e["nom"])
-            with col_suppr:
-                if st.button("🗑️", key=f"suppr_{e['id']}"):
-                    supprimer_equipement(e["id"])
-                    st.rerun()
+            row_cols = st.columns([3, 1.5, 1.5, 1, 1.5, 0.8])
+            row_cols[0].write(e["nom"])
+            row_cols[1].write(str(e["puissance_w"]))
+            row_cols[2].write(str(e["heures_par_jour"]))
+            row_cols[3].write(str(e["quantite"]))
+            row_cols[4].markdown(f"**{e['conso_jour_wh']:,.0f}**")
+            if row_cols[5].button("✕", key=f"suppr_{e['id']}", help="Supprimer"):
+                supprimer_equipement(e["id"])
+                st.rerun()
 
+        st.markdown("---")
+
+        if total_wh > 0:
+            st.markdown("**Répartition de la consommation :**")
+            colors = ["#1B2A4A", "#F4A300", "#27AE60", "#E74C3C", "#9B59B6", "#16A085"]
+            for i, e in enumerate(sorted(equipements, key=lambda x: x["conso_jour_wh"], reverse=True)):
+                pct = round(e["conso_jour_wh"] / total_wh * 100, 1)
+                color = colors[i % len(colors)]
+                st.markdown(f"""
+                <div class='distrib-bar-container'>
+                    <div class='distrib-bar-header'>
+                        <span>{e['nom']}</span><span>{pct}%</span>
+                    </div>
+                    <div class='distrib-bar-track'>
+                        <div class='distrib-bar-fill' style='width:{pct}%; background:{color}'></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🗑️ Effacer tous les équipements"):
             effacer_equipements()
             st.rerun()
