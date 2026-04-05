@@ -49,10 +49,24 @@ def afficher_formulaire_factures() -> None:
 
         moyenne = get_consommation_moyenne()
         if moyenne:
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Conso. journalière moyenne", f"{moyenne['consommation_journaliere_moyenne_kwh']} kWh/jour")
-            col2.metric("Tarif moyen", f"{moyenne['tarif_moyen_fcfa_kwh']} FCFA/kWh")
-            col3.metric("Nombre de factures", str(moyenne['nombre_factures']))
+            st.markdown(f"""
+            <div class='kpi-row' style='grid-template-columns: repeat(3, 1fr);'>
+                <div class='kpi-card light'>
+                    <div class='kpi-label'>Conso. journalière moyenne</div>
+                    <div class='kpi-value'>{moyenne['consommation_journaliere_moyenne_kwh']} kWh/j</div>
+                </div>
+                <div class='kpi-card light'>
+                    <div class='kpi-label'>Tarif moyen</div>
+                    <div class='kpi-value'>{moyenne['tarif_moyen_fcfa_kwh']} FCFA</div>
+                    <div class='kpi-sub'>par kWh</div>
+                </div>
+                <div class='kpi-card dark'>
+                    <div class='kpi-label'>Factures analysées</div>
+                    <div class='kpi-value'>{moyenne['nombre_factures']}</div>
+                    <div class='kpi-sub'>✓ Données exploitables</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         if st.button("🗑️ Effacer toutes les factures"):
             effacer_factures()
@@ -61,7 +75,7 @@ def afficher_formulaire_factures() -> None:
         st.divider()
 
     fichiers = st.file_uploader(
-        label="Ajouter des factures (PDF ou image)",
+        label="📂 Glissez-déposez vos factures ici ou cliquez pour sélectionner",
         type=list(EXTENSIONS_VALIDES),
         accept_multiple_files=True,
         help=f"Formats acceptés : PDF, JPG, PNG — Taille max : {TAILLE_MAX_UPLOAD_MB} MB"
