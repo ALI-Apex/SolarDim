@@ -1,3 +1,4 @@
+import html
 import logging
 from datetime import datetime
 import streamlit as st
@@ -21,7 +22,7 @@ def afficher_metriques_dimensionnement() -> None:
     parametres = get_parametres()
     ville = localisation["ville"].split(",")[0] if localisation else "site"
 
-    tarif = moyenne["tarif_moyen_fcfa_kwh"] if moyenne else float(parametres["tarif_kwh"])
+    tarif = moyenne["tarif_moyen_fcfa_kwh"] if (moyenne and moyenne.get("tarif_moyen_fcfa_kwh")) else float(parametres["tarif_kwh"])
     prix_installation = float(parametres["prix_total_installation"])
 
     rentabilite = None
@@ -33,7 +34,7 @@ def afficher_metriques_dimensionnement() -> None:
                 tarif_kwh=tarif,
             )
             st.session_state.rentabilite = rentabilite
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, TypeError) as e:
             logger.error("Erreur calcul rentabilité : %s", e)
 
     st.markdown("---")

@@ -1,3 +1,4 @@
+import html
 import logging
 import streamlit as st
 from core.solar_data import geocoder_ville, get_solar_data
@@ -44,7 +45,7 @@ def afficher_localisation() -> None:
 
     localisation = get_localisation()
     if localisation:
-        ville_affichee = localisation['ville'].split(',')[0]
+        ville_affichee = html.escape(localisation['ville'].split(',')[0])
         st.markdown(f"""
         <div class='kpi-row' style='grid-template-columns: repeat(4, 1fr);'>
             <div class='kpi-card dark'>

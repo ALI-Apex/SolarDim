@@ -1,3 +1,4 @@
+import html
 import logging
 import tempfile
 import streamlit as st
@@ -135,6 +136,10 @@ def afficher_formulaire_factures() -> None:
 
 
 def afficher_formulaire_equipements() -> None:
+    if st.session_state.get("_equipement_added"):
+        del st.session_state["_equipement_added"]
+        st.rerun()
+
     equipements = get_equipements()
     total_wh = sum(e["conso_jour_wh"] for e in equipements) if equipements else 0
     total_kwh = round(total_wh / 1000, 2)
@@ -174,9 +179,9 @@ def afficher_formulaire_equipements() -> None:
                 try:
                     ajouter_equipement(nom.strip(), puissance, heures, quantite, conso)
                     st.success(f"✅ {nom.strip()} ajouté !")
+                    st.session_state["_equipement_added"] = True
                 except ValueError as e:
                     st.error(f"❌ {e}")
-                st.rerun()
             else:
                 st.error("Veuillez renseigner un nom et une puissance > 0.")
 
@@ -211,7 +216,7 @@ def afficher_formulaire_equipements() -> None:
                 st.markdown(f"""
                 <div class='distrib-bar-container'>
                     <div class='distrib-bar-header'>
-                        <span>{e['nom']}</span><span>{pct}%</span>
+                        <span>{html.escape(e['nom'])}</span><span>{pct}%</span>
                     </div>
                     <div class='distrib-bar-track'>
                         <div class='distrib-bar-fill' style='width:{pct}%; background:{color}'></div>
