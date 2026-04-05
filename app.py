@@ -15,261 +15,240 @@ st.markdown(get_css(), unsafe_allow_html=True)
 initialiser_stockage()
 
 if "page_active" not in st.session_state:
-    st.session_state.page_active = "Accueil"
+    st.session_state.page_active = "Factures"
 
 # ==============================
-# SIDEBAR
+# WIZARD CONFIG
+# ==============================
+WIZARD_STEPS = [
+    ("📄", "Factures"),
+    ("🔌", "Équipements"),
+    ("📍", "Localisation"),
+    ("🔧", "Configurations"),
+    ("⚡", "Analyse"),
+]
+WIZARD_STEP_NAMES = [nom for _, nom in WIZARD_STEPS]
+SIDEBAR_PAGES = ["Guide & Notions", "Analyse IA"]
+
+
+def _get_step_status(step_nom: str, data: dict) -> str:
+    """Retourne 'done', 'active' ou 'pending' pour une étape du wizard."""
+    if step_nom == st.session_state.page_active:
+        return "active"
+    if step_nom == "Factures" and data.get("factures"):
+        return "done"
+    if step_nom == "Équipements" and data.get("equipements"):
+        return "done"
+    if step_nom == "Localisation" and data.get("localisation"):
+        return "done"
+    if step_nom == "Configurations" and any([data.get("module"), data.get("onduleur"), data.get("batterie")]):
+        return "done"
+    if step_nom == "Analyse" and "dim" in st.session_state:
+        return "done"
+    return "pending"
+
+
+def _afficher_wizard_bar(data: dict) -> None:
+    """Affiche la barre de progression wizard en HTML."""
+    html = "<div class='wizard-bar'>"
+    for i, (icone, nom) in enumerate(WIZARD_STEPS):
+        statut = _get_step_status(nom, data)
+        label_circle = "✓" if statut == "done" else str(i + 1)
+        html += f"""
+        <div class='wizard-step' onclick="''">
+            <div class='wizard-step-circle {statut}'>{label_circle}</div>
+            <div class='wizard-step-label {statut}'>{icone} {nom}</div>
+        </div>"""
+        if i < len(WIZARD_STEPS) - 1:
+            connector_class = "done" if statut == "done" else "pending"
+            html += f"<div class='wizard-connector {connector_class}'></div>"
+    html += "</div>"
+    st.markdown(html, unsafe_allow_html=True)
+
+
+# ==============================
+# SIDEBAR SIMPLIFIÉE
 # ==============================
 with st.sidebar:
     st.markdown("""
-        <div style='text-align:center; padding: 20px 0 20px 0;'>
-            <div style='font-size:48px;'>☀️</div>
-            <div style='font-size:28px; font-weight:bold; color:white; letter-spacing:2px;'>Raana</div>
-            <div style='font-size:13px; color:#aaa;'>Fahishal</div>
+        <div style='text-align:center; padding: 20px 0 16px 0;'>
+            <div style='font-size:44px;'>☀️</div>
+            <div style='font-size:26px; font-weight:bold; color:white; letter-spacing:2px;'>Raana</div>
+            <div style='font-size:12px; color:#aaa;'>Fahishal</div>
         </div>
+        <div style='height:1px; background:#1a2a4a; margin:0 8px 12px 8px;'></div>
     """, unsafe_allow_html=True)
 
-    pages = [
-        ("🏠", "Accueil"),
-        ("📄", "Factures"),
-        ("🔌", "Équipements"),
-        ("📍", "Localisation"),
-        ("🔧", "Configurations"),
-        ("🤖", "Analyse IA"),
-        ("📖", "Guide & Notions")
-    ]
-
-    for icone, nom in pages:
-        if st.button(
-            f"{icone}  {nom}",
-            key=f"nav_{nom}",
-            use_container_width=True
-        ):
+    for icone, nom in [("📖", "Guide & Notions"), ("🤖", "Analyse IA")]:
+        is_active = st.session_state.page_active == nom
+        btn_style = "background:#F4A300 !important; color:white !important; font-weight:bold !important;"
+        if is_active:
+            st.markdown(f"<style>[data-testid='stSidebar'] [data-testid='stBaseButton-secondary']:has(p:contains('{nom}')) {{ {btn_style} }}</style>", unsafe_allow_html=True)
+        if st.button(f"{icone}  {nom}", key=f"nav_{nom}", use_container_width=True):
             st.session_state.page_active = nom
             st.rerun()
 
-    # CSS dynamique pour le bouton actif
-    noms_pages = [nom for _, nom in pages]
-    index_actif = noms_pages.index(st.session_state.page_active)
-    icone_actif, nom_actif = pages[index_actif]
+    st.markdown("<div style='height:1px; background:#1a2a4a; margin:12px 8px 0 8px;'></div>", unsafe_allow_html=True)
 
-    st.markdown(f"""
-        <style>
-        [data-testid="stSidebar"] .stButton > button:has(div:contains("{icone_actif}  {nom_actif}")) {{
-            background-color: #F4A300 !important;
-            color: white !important;
-            font-weight: bold !important;
-        }}
-        </style>
-    """, unsafe_allow_html=True)
+    # Boutons étapes wizard dans la sidebar (accès rapide)
+    st.markdown("<div style='font-size:10px; color:#555; padding: 8px 16px; text-transform:uppercase; letter-spacing:0.5px;'>Étapes</div>", unsafe_allow_html=True)
+    for icone, nom in WIZARD_STEPS:
+        if st.button(f"{icone} {nom}", key=f"nav_wizard_{nom}", use_container_width=True):
+            st.session_state.page_active = nom
+            st.rerun()
 
 # ==============================
-# CONTENU PRINCIPAL
+# DONNÉES POUR WIZARD BAR
 # ==============================
 page = st.session_state.page_active
 
-# ----------------------------
-# ACCUEIL
-# ----------------------------
-if page == "Accueil":
-    from core.storage import (
-        get_factures, get_equipements, get_localisation,
-        get_consommation_moyenne, get_module_pv,
-        get_onduleur, get_batterie, get_strings
-    )
+from core.storage import (
+    get_factures, get_equipements, get_localisation,
+    get_consommation_moyenne, get_module_pv,
+    get_onduleur, get_batterie, get_strings, get_parametres
+)
+from core.sizing import calculer_dimensionnement_complet, calculer_consommation_journaliere
 
-    from core.sizing import (
-        calculer_dimensionnement_complet,
-        calculer_consommation_journaliere
-    )
-    from ui.results_display import afficher_metriques_dimensionnement
+factures = get_factures()
+equipements = get_equipements()
+localisation = get_localisation()
+module = get_module_pv()
+onduleur_data = get_onduleur()
+batterie_u = get_batterie()
+strings = get_strings()
+moyenne = get_consommation_moyenne()
 
-    # Récupération de toutes les données
-    factures = get_factures()
-    equipements = get_equipements()
-    localisation = get_localisation()
-    moyenne = get_consommation_moyenne()
-    module = get_module_pv()
-    onduleur_data = get_onduleur()
-    batterie_u = get_batterie()
+_wizard_data = {
+    "factures": factures,
+    "equipements": equipements,
+    "localisation": localisation,
+    "module": module,
+    "onduleur": onduleur_data,
+    "batterie": batterie_u,
+}
 
-    st.markdown("<div class='page-title'>Tableau de bord</div>", unsafe_allow_html=True)
-    st.markdown("<div class='page-subtitle'>Renseignez vos données puis lancez l'analyse</div>", unsafe_allow_html=True)
-
-    # --- KPI Cards ---
-    col1, col2, col3, col4 = st.columns(4)
-
-    conso_moy = f"{moyenne['consommation_journaliere_moyenne_kwh']} kWh/j" if moyenne else "—"
-    tarif_moy = f"{moyenne['tarif_moyen_fcfa_kwh']} FCFA/kWh" if moyenne else "—"
-    hsp = f"{localisation['hsp_moyen']} h/j" if localisation else "—"
-    ville = localisation['ville'].split(',')[0] if localisation else "Non définie"
-    nb_eq = len(equipements)
-    conso_eq_wh = calculer_consommation_journaliere(equipements) if equipements else 0
-    conso_eq_kwh = round(conso_eq_wh / 1000, 2) if equipements else 0
-
-    with col1:
-        statut = f"✓ {len(factures)} facture(s)" if factures else (
-            "✓ Depuis équipements" if equipements else "⚠ Non renseigné"
-        )
-        st.markdown(f"""
-            <div class='metric-card blue'>
-                <div class='label'>Consommation moyenne</div>
-                <div class='value'>{conso_moy}</div>
-                <div class='status-ok'>{statut}</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-            <div class='metric-card'>
-                <div class='label'>Tarif moyen</div>
-                <div class='value'>{tarif_moy}</div>
-                <div class='status-ok'>{'✓ Calculé' if moyenne else '⚠ Non disponible'}</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown(f"""
-            <div class='metric-card'>
-                <div class='label'>HSP — {ville}</div>
-                <div class='value'>{hsp}</div>
-                <div class='status-ok'>{'✓ PVGIS' if localisation else '⚠ Localisation manquante'}</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with col4:
-        st.markdown(f"""
-            <div class='metric-card blue'>
-                <div class='label'>Énergie journalière EQ</div>
-                <div class='value'>{conso_eq_kwh if conso_eq_kwh > 0 else "—"} kWh/j</div>
-                <div class='{"status-ok" if conso_eq_kwh > 0 else "status-error"}'>
-                    {'✓ ' + str(nb_eq) + ' équipement(s) saisi(s)' if nb_eq > 0 else '⚠ Aucun équipement'}
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # --- Checklist ---
-    has_conso = len(factures) >= 1 or len(equipements) >= 1
-    has_composants = any([module, onduleur_data, batterie_u])
-
-    st.subheader("📋 Checklist")
-
-    etapes = [
-        ("Consommation renseignée (factures ou équipements)", has_conso, "Factures"),
-        ("Localisation définie", localisation is not None, "Localisation"),
-        ("Composants renseignés (optionnel)", has_composants, "Configurations"),
-    ]
-
-    cols = st.columns(len(etapes))
-    for i, (label, ok, page_cible) in enumerate(etapes):
-        with cols[i]:
-            icone = "✅" if ok else ("⚠️" if "optionnel" in label else "❌")
-            st.markdown(f"{icone} {label}")
-            if not ok:
-                if st.button("→ Aller", key=f"goto_{page_cible}"):
-                    st.session_state.page_active = page_cible
-                    st.rerun()
-
-    st.markdown("---")
-
-    # --- Bouton lancer l'analyse ---
-    peut_analyser = has_conso and localisation is not None
-
-    # recuperation des donnees
-    module = get_module_pv()
-    onduleur_data = get_onduleur()
-    strings = get_strings()
-    batterie_u = get_batterie()
-
-    if peut_analyser:
-        if st.button("⚡ Lancer l'analyse", type="primary", use_container_width=True):
-            with st.spinner("Calcul en cours..."):
-                try:
-                    # Calcul Python du dimensionnement pour métriques et graphes
-                    if equipements:
-                        dim = calculer_dimensionnement_complet(
-                            hsp=localisation["hsp_moyen"],
-                            equipements=equipements,
-                            module=module,
-                            onduleur=onduleur_data,
-                            strings=strings,
-                            batterie_unitaire=batterie_u
-                        )
-                    else:
-                        dim = calculer_dimensionnement_complet(
-                            hsp=localisation["hsp_moyen"],
-                            conso_journaliere_kwh=moyenne["consommation_journaliere_moyenne_kwh"],
-                            module=module,
-                            onduleur=onduleur_data,
-                            strings=strings,
-                            batterie_unitaire=batterie_u
-                        )
-
-                    st.session_state.dim = dim
-                    st.success("✅ Analyse terminée !")
-                    st.rerun()
-
-                except Exception as e:
-                    st.error(f"❌ Erreur : {e}")
-
-    else:
-        st.warning("⚠️ Renseignez au minimum votre consommation et votre localisation.")
-
-    # --- Résultats + Graphe + Fiche technique ---
-    afficher_metriques_dimensionnement()
-
-# ----------------------------
-# FACTURES
-# ----------------------------
-elif page == "Factures":
-    st.markdown("<div class='page-title'>📄 Factures d'électricité</div>", unsafe_allow_html=True)
-    st.markdown("<div class='page-subtitle'>Uploadez et analysez vos factures</div>", unsafe_allow_html=True)
-    from ui.input_forms import afficher_formulaire_factures
-    afficher_formulaire_factures()
-
-# ----------------------------
-# ÉQUIPEMENTS
-# ----------------------------
-elif page == "Équipements":
-    st.markdown("<div class='page-title'>🔌 Équipements électriques</div>", unsafe_allow_html=True)
-    st.markdown("<div class='page-subtitle'>Listez vos appareils pour estimer votre consommation</div>", unsafe_allow_html=True)
-    from ui.input_forms import afficher_formulaire_equipements
-    afficher_formulaire_equipements()
-
-# ----------------------------
-# LOCALISATION
-# ----------------------------
-elif page == "Localisation":
-    st.markdown("<div class='page-title'>📍 Localisation du site</div>", unsafe_allow_html=True)
-    st.markdown("<div class='page-subtitle'>Données d'ensoleillement via PVGIS</div>", unsafe_allow_html=True)
-    from ui.localisation_composants import afficher_localisation
-    afficher_localisation()
-
-# ----------------------------
-# COMPOSANTS
-# ----------------------------
-elif page == "Configurations":
-    st.markdown("<div class='page-title'>🔧 Configurations</div>", unsafe_allow_html=True)
-    st.markdown("<div class='page-subtitle'>Renseignez vos composants et les paramètres économiques</div>", unsafe_allow_html=True)
-    from ui.localisation_composants import afficher_composants
-    afficher_composants()
-
-# ----------------------------
-# ANALYSE IA
-# ----------------------------
-elif page == "Analyse IA":
-    st.markdown("<div class='page-title'>🤖 Analyse IA</div>", unsafe_allow_html=True)
-    st.markdown("<div class='page-subtitle'>Rapport complet généré par l'agent</div>", unsafe_allow_html=True)
-    from ui.results_display import afficher_rapport_agent
-    afficher_rapport_agent()
-
-# ----------------------------
-# GUIDE & NOTIONS
-# ----------------------------
-elif page == "Guide & Notions":
+# ==============================
+# PAGES SIDEBAR (hors wizard)
+# ==============================
+if page == "Guide & Notions":
     st.markdown("<div class='page-title'>📖 Guide & Notions</div>", unsafe_allow_html=True)
     st.markdown("<div class='page-subtitle'>Comprendre les concepts et utiliser l'outil efficacement</div>", unsafe_allow_html=True)
     from ui.guide import afficher_guide
     afficher_guide()
+
+elif page == "Analyse IA":
+    st.markdown("<div class='page-title'>🤖 Analyse IA</div>", unsafe_allow_html=True)
+    st.markdown("<div class='page-subtitle'>Posez une question à l'agent solaire</div>", unsafe_allow_html=True)
+    from ui.results_display import afficher_rapport_agent
+    afficher_rapport_agent()
+
+# ==============================
+# PAGES WIZARD
+# ==============================
+else:
+    # S'assurer que la page est valide
+    if page not in WIZARD_STEP_NAMES:
+        st.session_state.page_active = "Factures"
+        st.rerun()
+
+    _afficher_wizard_bar(_wizard_data)
+    step_index = WIZARD_STEP_NAMES.index(page)
+
+    # ----------------------------
+    # ÉTAPE 1 — FACTURES
+    # ----------------------------
+    if page == "Factures":
+        st.markdown("<div class='page-title'>📄 Factures d'électricité</div>", unsafe_allow_html=True)
+        st.markdown("<div class='page-subtitle'>Uploadez vos factures pour estimer votre consommation</div>", unsafe_allow_html=True)
+        from ui.input_forms import afficher_formulaire_factures
+        afficher_formulaire_factures()
+
+    # ----------------------------
+    # ÉTAPE 2 — ÉQUIPEMENTS
+    # ----------------------------
+    elif page == "Équipements":
+        st.markdown("<div class='page-title'>🔌 Équipements électriques</div>", unsafe_allow_html=True)
+        st.markdown("<div class='page-subtitle'>Listez vos appareils pour estimer votre consommation</div>", unsafe_allow_html=True)
+        from ui.input_forms import afficher_formulaire_equipements
+        afficher_formulaire_equipements()
+
+    # ----------------------------
+    # ÉTAPE 3 — LOCALISATION
+    # ----------------------------
+    elif page == "Localisation":
+        st.markdown("<div class='page-title'>📍 Localisation du site</div>", unsafe_allow_html=True)
+        st.markdown("<div class='page-subtitle'>Données d'ensoleillement via PVGIS</div>", unsafe_allow_html=True)
+        from ui.localisation_composants import afficher_localisation
+        afficher_localisation()
+
+    # ----------------------------
+    # ÉTAPE 4 — CONFIGURATIONS
+    # ----------------------------
+    elif page == "Configurations":
+        st.markdown("<div class='page-title'>🔧 Configurations</div>", unsafe_allow_html=True)
+        st.markdown("<div class='page-subtitle'>Renseignez vos composants et les paramètres économiques</div>", unsafe_allow_html=True)
+        from ui.localisation_composants import afficher_composants
+        afficher_composants()
+
+    # ----------------------------
+    # ÉTAPE 5 — ANALYSE
+    # ----------------------------
+    elif page == "Analyse":
+        st.markdown("<div class='page-title'>⚡ Analyse & Résultats</div>", unsafe_allow_html=True)
+        st.markdown("<div class='page-subtitle'>Dimensionnement complet de votre installation</div>", unsafe_allow_html=True)
+        from ui.results_display import afficher_metriques_dimensionnement
+
+        peut_analyser = (len(factures) >= 1 or len(equipements) >= 1) and localisation is not None
+
+        if not peut_analyser:
+            st.warning("⚠️ Complétez au minimum les étapes **Consommation** (Factures ou Équipements) et **Localisation** avant de lancer l'analyse.")
+        else:
+            if "dim" not in st.session_state:
+                st.markdown("<div class='btn-pulse'>", unsafe_allow_html=True)
+            if st.button("⚡ Lancer l'analyse", type="primary", use_container_width=True):
+                with st.spinner("Calcul en cours..."):
+                    try:
+                        if equipements:
+                            dim = calculer_dimensionnement_complet(
+                                hsp=localisation["hsp_moyen"],
+                                equipements=equipements,
+                                module=module,
+                                onduleur=onduleur_data,
+                                strings=strings,
+                                batterie_unitaire=batterie_u
+                            )
+                        else:
+                            dim = calculer_dimensionnement_complet(
+                                hsp=localisation["hsp_moyen"],
+                                conso_journaliere_kwh=moyenne["consommation_journaliere_moyenne_kwh"],
+                                module=module,
+                                onduleur=onduleur_data,
+                                strings=strings,
+                                batterie_unitaire=batterie_u
+                            )
+                        st.session_state.dim = dim
+                        st.success("✅ Analyse terminée !")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Erreur : {e}")
+            if "dim" not in st.session_state:
+                st.markdown("</div>", unsafe_allow_html=True)
+
+        afficher_metriques_dimensionnement()
+
+    # ----------------------------
+    # NAVIGATION PRÉCÉDENT / SUIVANT
+    # ----------------------------
+    st.markdown("<div class='wizard-nav'>", unsafe_allow_html=True)
+    col_prev, col_next = st.columns([1, 1])
+    with col_prev:
+        if step_index > 0:
+            if st.button(f"← {WIZARD_STEPS[step_index - 1][1]}", use_container_width=True):
+                st.session_state.page_active = WIZARD_STEP_NAMES[step_index - 1]
+                st.rerun()
+    with col_next:
+        if step_index < len(WIZARD_STEPS) - 1:
+            if st.button(f"{WIZARD_STEPS[step_index + 1][1]} →", type="primary", use_container_width=True):
+                st.session_state.page_active = WIZARD_STEP_NAMES[step_index + 1]
+                st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
