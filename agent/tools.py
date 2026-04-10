@@ -1,6 +1,6 @@
 from langchain.tools import tool
 from config import TARIF_KWH_DEFAULT_FCFA, PUISSANCE_PANNEAU_DEFAULT_WC, TENSION_BATTERIE_DEFAULT_V
-from core.storage import get_equipements, get_localisation, get_composants, get_parametres
+from core.storage import get_equipements, get_localisation, get_composants, get_parametres, get_consommation_moyenne
 from core.sizing import (
     calculer_dimensionnement_complet,
     calculer_rentabilite
@@ -16,13 +16,15 @@ def get_donnees_projet(input: str = "") -> dict:
     equipements = get_equipements()
     localisation = get_localisation()
     composants = get_composants()
+    moyenne_factures = get_consommation_moyenne()
 
     return {
         "equipements": equipements,
         "localisation": localisation,
         "composants": composants,
         "nombre_equipements": len(equipements),
-        "consommation_totale_wh": sum(e["conso_jour_wh"] for e in equipements)
+        "consommation_totale_wh": sum(e["conso_jour_wh"] for e in equipements),
+        "moyenne_factures": moyenne_factures,
     }
 
 
@@ -30,7 +32,7 @@ def get_donnees_projet(input: str = "") -> dict:
 def outil_dimensionnement(puissance_panneau_wc: float = PUISSANCE_PANNEAU_DEFAULT_WC, tension_batterie_v: float = TENSION_BATTERIE_DEFAULT_V) -> dict:
     """
     Calcule le dimensionnement complet du système PV off-grid.
-    Utilise les données de la base (équipements + localisation).
+    Utilise les données de la base (équipements ou factures + localisation).
 
     Paramètres :
     - puissance_panneau_wc : puissance unitaire du panneau en Wc (défaut 500)
@@ -39,22 +41,29 @@ def outil_dimensionnement(puissance_panneau_wc: float = PUISSANCE_PANNEAU_DEFAUL
     equipements = get_equipements()
     localisation = get_localisation()
 
-    if not equipements:
-        return {"erreur": "Aucun équipement trouvé dans la base de données."}
     if not localisation:
         return {"erreur": "Aucune localisation trouvée dans la base de données."}
 
     hsp = localisation["hsp_moyen"]
 
-    dimensionnement = calculer_dimensionnement_complet(
-        equipements=equipements,
-        hsp=hsp,
-        puissance_panneau_wc=puissance_panneau_wc,
-        tension_batterie_v=tension_batterie_v
-    )
+    if equipements:
+        return calculer_dimensionnement_complet(
+            equipements=equipements,
+            hsp=hsp,
+            puissance_panneau_wc=puissance_panneau_wc,
+            tension_batterie_v=tension_batterie_v
+        )
 
+    moyenne = get_consommation_moyenne()
+    if moyenne:
+        return calculer_dimensionnement_complet(
+            conso_journaliere_kwh=moyenne["consommation_journaliere_moyenne_kwh"],
+            hsp=hsp,
+            puissance_panneau_wc=puissance_panneau_wc,
+            tension_batterie_v=tension_batterie_v
+        )
 
-    return dimensionnement
+    return {"erreur": "Aucune donnée de consommation trouvée (ni équipements ni factures)."}
 
 
 @tool
