@@ -445,19 +445,9 @@ def get_css():
             border-radius: 12px !important;
             padding: 20px !important;
         }
-
+        
         [data-testid="stFileUploader"]:hover {
             border-color: #F4A300 !important;
-        }
-
-        /* Noms de fichiers uploadés — texte noir */
-        [data-testid="stFileUploader"] span,
-        [data-testid="stFileUploader"] p,
-        [data-testid="stFileUploader"] small,
-        [data-testid="stFileUploaderFile"] span,
-        [data-testid="stFileUploaderFile"] p,
-        [data-testid="stFileUploaderFile"] small {
-            color: #1B2A4A !important;
         }
         
         /* Tableau dataframe */
