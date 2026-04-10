@@ -449,7 +449,15 @@ def get_css():
         [data-testid="stFileUploader"]:hover {
             border-color: #F4A300 !important;
         }
-        
+
+        /* Noms des fichiers uploadés — forcer texte foncé sur fond blanc */
+        .stFileUploaderFileName,
+        .stFileUploaderFileData,
+        [data-testid="stFileUploaderFile"] div,
+        [data-testid="stFileUploaderFile"] small {
+            color: #1B2A4A !important;
+        }
+
         /* Tableau dataframe */
         [data-testid="stDataFrame"] {
             background-color: white !important;
