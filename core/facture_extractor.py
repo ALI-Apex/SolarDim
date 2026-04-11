@@ -90,7 +90,7 @@ def _creer_llm(model: str) -> ChatGroq:
     """Crée une instance LLM avec la clé API."""
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        raise EnvironmentError("GROQ_API_KEY non définie dans les variables d'environnement")
+        raise RuntimeError("GROQ_API_KEY non définie dans les variables d'environnement")
     return ChatGroq(model=model, api_key=api_key, temperature=0)
 
 
@@ -176,9 +176,12 @@ def extraire_donnees_facture(chemin_fichier: str, nom_fichier: str) -> tuple[dic
     except json.JSONDecodeError as e:
         logger.error("Réponse LLM non JSON pour %s : %s", nom_fichier, e)
         return None, "Le modèle IA n'a pas retourné un JSON valide"
-    except EnvironmentError as e:
+    except RuntimeError as e:
         logger.error("Clé API manquante : %s", e)
         return None, "Clé API Groq manquante ou invalide"
+    except OSError as e:
+        logger.error("Erreur fichier/OS pour %s : %s — %s", nom_fichier, type(e).__name__, e)
+        return None, f"Erreur fichier : {type(e).__name__} : {str(e)[:120]}"
     except Exception as e:
         logger.error("Erreur inattendue pour %s : %s — %s", nom_fichier, type(e).__name__, e)
         return None, f"{type(e).__name__} : {str(e)[:120]}"
