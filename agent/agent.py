@@ -1,11 +1,8 @@
 import os
-from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage
 from agent.tools import get_donnees_projet, outil_dimensionnement, outil_rentabilite
-
-load_dotenv()
 
 def creer_agent():
     """Crée et retourne l'agent LangGraph configuré avec Groq"""

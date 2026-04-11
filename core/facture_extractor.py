@@ -4,12 +4,9 @@ import base64
 import logging
 import tempfile
 from pathlib import Path
-from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage
 import fitz
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 

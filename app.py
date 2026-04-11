@@ -1,6 +1,9 @@
 import streamlit as st
+from dotenv import load_dotenv
 from ui.style import get_css
 from core.storage import initialiser_stockage
+
+load_dotenv(override=True)  # Charge .env en priorité sur les variables système
 
 st.set_page_config(
     page_title="Raana",
