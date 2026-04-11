@@ -41,3 +41,8 @@ build/
 
 # ChromaDB (qu'on ajoutera plus tard)
 chroma_db/
+
+# Fichiers temporaires outils de développement
+.playwright-mcp/
+.superpowers/
+screenshot*.png
